@@ -1,0 +1,18 @@
+# 旧导出目录（ZIP 解压出来的原始版本，自带独立 .git 历史，这里只当备份参考）
+健康生活/
+
+# 本地云端配置：含实例地址和 publishable key，不要提交
+site/config.js
+
+# 本地云客户端 SDK：仓库里不放第三方实现，自己接后端时放这里
+site/vendor/cloud-sdk.js
+
+# 系统垃圾
+.DS_Store
+Thumbs.db
+*.tmp
+
+# 编辑器
+.vscode/
+.idea/
+*.swp

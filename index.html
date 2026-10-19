@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>健康生活 · Health Life</title>
+<meta http-equiv="refresh" content="0; url=./site/">
+<meta name="description" content="两个自托管的小工具：轮转饮食记录 + 健身打卡。纯 HTML，无构建，数据归你自己。">
+<style>
+  :root { --teal:#1D9E75; --ink:#26261f; --ink3:#888780; --page:#F5F6F2; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background:var(--page); color:var(--ink); min-height:100vh;
+    display:flex; align-items:center; justify-content:center;
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+    padding:24px;
+  }
+  .box { text-align:center; }
+  .dot { width:10px; height:10px; border-radius:50%; background:var(--teal); margin:0 auto 18px;
+         animation:pulse 1.2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:.35;transform:scale(.85)} 50%{opacity:1;transform:scale(1)} }
+  h1 { font-size:22px; font-weight:800; letter-spacing:.5px; }
+  p { font-size:13px; color:var(--ink3); margin-top:10px; }
+  a { color:var(--teal); text-decoration:none; font-weight:600; }
+  a:hover { text-decoration:underline; }
+</style>
+</head>
+<body>
+  <div class="box">
+    <div class="dot"></div>
+    <h1>健康生活</h1>
+    <p>正在进入… 如果没有自动跳转，<a href="./site/">点这里</a></p>
+  </div>
+</body>
+</html>
