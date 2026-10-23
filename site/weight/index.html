@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0F6E56">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="体重">
+<title>体重记录</title>
+<style>
+:root{
+  --teal:#1D9E75; --teal-dark:#0F6E56; --teal-bg:#E1F5EE;
+  --amber:#EF9F27; --red:#D85A30; --red-bg:#FAECE7;
+  --ink:#26261f; --ink2:#5F5E5A; --ink3:#888780;
+  --page:#F5F6F2; --card:#FFFFFF; --line:#E5E7E0;
+  --sab: env(safe-area-inset-bottom, 0px);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--page);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;font-size:16px;line-height:1.5;min-height:100vh}
+body{max-width:560px;margin:0 auto;padding:20px 18px calc(32px + var(--sab))}
+
+.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.back{color:var(--teal-dark);text-decoration:none;font-size:15px;font-weight:600}
+.syncbtn{font-size:12px;color:var(--ink3);background:var(--card);border:1px solid var(--line);border-radius:20px;padding:6px 12px;cursor:pointer;font-weight:600}
+.syncbtn.ok{color:var(--teal-dark);border-color:var(--teal);background:var(--teal-bg)}
+
+h1{font-size:20px;font-weight:800;margin-bottom:14px}
+
+.hero{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:22px 20px;text-align:center;box-shadow:0 1px 2px rgba(20,40,30,.05),0 8px 24px -16px rgba(20,60,40,.2)}
+.big{font-size:52px;font-weight:800;letter-spacing:-1px;line-height:1}
+.big .u{font-size:18px;font-weight:600;color:var(--ink3);margin-left:4px;letter-spacing:0}
+.delta{font-size:13px;margin-top:8px;color:var(--ink3)}
+.delta.up{color:var(--red)}
+.delta.down{color:var(--teal-dark)}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;margin-top:14px}
+.row{display:flex;gap:10px;align-items:center}
+.row + .row{margin-top:10px}
+label{font-size:12px;color:var(--ink3);display:block;margin-bottom:5px;font-weight:600}
+input[type=date],input[type=number]{
+  width:100%;padding:11px 12px;font-size:16px;border:1px solid var(--line);
+  border-radius:12px;background:#FBFCFA;color:var(--ink);font-family:inherit;
+}
+input:focus{outline:none;border-color:var(--teal);background:#fff}
+button.primary{
+  width:100%;margin-top:12px;padding:13px;font-size:16px;font-weight:800;
+  border:none;border-radius:14px;background:var(--teal);color:#fff;cursor:pointer;font-family:inherit;
+}
+button.primary:active{background:var(--teal-dark)}
+
+.sec{margin-top:22px}
+.sec h2{font-size:13px;font-weight:800;color:var(--ink3);letter-spacing:.5px;margin-bottom:10px;text-transform:uppercase}
+
+.chart{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px 12px}
+.chart svg{width:100%;height:150px;display:block}
+.axis{font-size:10px;fill:var(--ink3)}
+
+.list{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden}
+.it{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--line);font-size:15px}
+.it:last-child{border-bottom:none}
+.it .d{color:var(--ink2);font-size:14px}
+.it .w{font-weight:700;font-variant-numeric:tabular-nums}
+.it .del{color:var(--ink3);font-size:13px;padding:2px 8px;cursor:pointer;border:none;background:none}
+.it .w.up{color:var(--red)}
+.it .w.down{color:var(--teal-dark)}
+
+.empty{text-align:center;color:var(--ink3);font-size:14px;padding:24px}
+
+.tip{margin-top:16px;font-size:12px;color:var(--ink3);line-height:1.7}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <a class="back" href="../">‹ 返回</a>
+  <button class="syncbtn" id="syncbtn">仅本机</button>
+</div>
+
+<h1>体重记录</h1>
+
+<div class="hero">
+  <div class="big"><span id="latest">—</span><span class="u">kg</span></div>
+  <div class="delta" id="delta">还没有记录</div>
+</div>
+
+<div class="card">
+  <div class="row">
+    <div style="flex:1">
+      <label>日期</label>
+      <input type="date" id="inDate">
+    </div>
+    <div style="flex:1">
+      <label>体重 (kg)</label>
+      <input type="number" id="inWeight" step="0.1" min="30" max="200" placeholder="74.4" inputmode="decimal">
+    </div>
+  </div>
+  <button class="primary" id="btnSave">记录</button>
+</div>
+
+<div class="sec">
+  <h2>近 90 天</h2>
+  <div class="chart"><svg id="chart" viewBox="0 0 320 150" preserveAspectRatio="none"></svg></div>
+</div>
+
+<div class="sec">
+  <h2>全部记录 <span id="count" style="font-weight:600"></span></h2>
+  <div class="list" id="list"></div>
+</div>
+
+<div class="tip">
+  早起、排空、空腹、同一台秤、同一件衣服。每周 3 次以上就够看趋势，单日 ±1 kg 都是水分。
+</div>
+
+<script src="../sync.js"></script>
+<script>
+(function(){
+  'use strict';
+  var KEY = 'health_weight_v1';
+  var state = { records: [] };
+
+  try {
+    var raw = localStorage.getItem(KEY);
+    if (raw) state = JSON.parse(raw);
+  } catch(e) {}
+  if (!state.records) state.records = [];
+
+  function todayStr(){
+    var d = new Date();
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }
+  function saveLocal(){
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e) {}
+  }
+  function save(){
+    saveLocal();
+    if (window.HealthSync) { try { HealthSync.touch(); } catch(e) {} }
+  }
+
+  function sorted(){
+    return state.records.slice().sort(function(a,b){ return a.date < b.date ? 1 : -1; });
+  }
+
+  function render(){
+    var rs = sorted();
+
+    // 最新
+    if (rs.length) {
+      document.getElementById('latest').textContent = rs[0].weight.toFixed(1);
+      if (rs.length > 1) {
+        var d = rs[0].weight - rs[1].weight;
+        var el = document.getElementById('delta');
+        el.textContent = '较上次 ' + (d > 0 ? '+' : '') + d.toFixed(1) + ' kg · ' + rs[0].date;
+        el.className = 'delta ' + (d > 0 ? 'up' : (d < 0 ? 'down' : ''));
+      }
+    } else {
+      document.getElementById('latest').textContent = '—';
+      document.getElementById('delta').textContent = '还没有记录';
+    }
+
+    // 列表
+    var list = document.getElementById('list');
+    document.getElementById('count').textContent = rs.length ? '（' + rs.length + ' 条）' : '';
+    if (!rs.length) {
+      list.innerHTML = '<div class="empty">还没有记录，上面填一个</div>';
+    } else {
+      var html = '';
+      for (var i = 0; i < Math.min(rs.length, 60); i++) {
+        var r = rs[i];
+        var prev = rs[i+1];
+        var cls = '';
+        if (prev) {
+          var dd = r.weight - prev.weight;
+          cls = dd > 0 ? 'up' : (dd < 0 ? 'down' : '');
+        }
+        html += '<div class="it"><span class="d">' + r.date + '</span>' +
+                '<span style="display:flex;align-items:center;gap:8px">' +
+                '<span class="w ' + cls + '">' + r.weight.toFixed(1) + ' kg</span>' +
+                '<button class="del" data-d="' + r.date + '">删</button></span></div>';
+      }
+      list.innerHTML = html;
+      Array.prototype.forEach.call(list.querySelectorAll('.del'), function(b){
+        b.onclick = function(){
+          var d = b.getAttribute('data-d');
+          if (!confirm('删除 ' + d + ' 的记录？')) return;
+          state.records = state.records.filter(function(x){ return x.date !== d; });
+          save(); render();
+        };
+      });
+    }
+
+    drawChart(rs);
+  }
+
+  function drawChart(rsAsc){
+    var svg = document.getElementById('chart');
+    var rs = state.records.slice().sort(function(a,b){ return a.date < b.date ? -1 : 1; });
+    // 近 90 天窗口按最后一条记录往前推
+    if (rs.length) {
+      var last = new Date(rs[rs.length-1].date);
+      var cut = new Date(last.getTime() - 89*86400000);
+      rs = rs.filter(function(r){ return new Date(r.date) >= cut; });
+    }
+    if (rs.length < 2) {
+      svg.innerHTML = '<text x="160" y="80" text-anchor="middle" class="axis">记录 2 条以上出曲线</text>';
+      return;
+    }
+    var W = 320, H = 150, P = 24;
+    var ws = rs.map(function(r){ return r.weight; });
+    var min = Math.min.apply(null, ws), max = Math.max.apply(null, ws);
+    if (max - min < 1) { max = min + 1; }
+    var pad = (max - min) * 0.15; min -= pad; max += pad;
+
+    function x(i){ return P + (W - P*2) * (i / (rs.length-1)); }
+    function y(v){ return H - P - (H - P*2) * ((v - min) / (max - min)); }
+
+    var pts = rs.map(function(r,i){ return x(i).toFixed(1) + ',' + y(r.weight).toFixed(1); }).join(' ');
+    var area = pts + ' ' + x(rs.length-1).toFixed(1) + ',' + (H-P) + ' ' + x(0).toFixed(1) + ',' + (H-P);
+
+    var g = '';
+    g += '<polygon points="' + area + '" fill="rgba(29,158,117,.10)"/>';
+    g += '<polyline points="' + pts + '" fill="none" stroke="#1D9E75" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>';
+    // 首末点
+    [0, rs.length-1].forEach(function(i){
+      g += '<circle cx="' + x(i).toFixed(1) + '" cy="' + y(rs[i].weight).toFixed(1) + '" r="3" fill="#1D9E75"/>';
+    });
+    // 首末日期
+    g += '<text x="' + P + '" y="' + (H-6) + '" class="axis">' + rs[0].date.slice(5) + '</text>';
+    g += '<text x="' + (W-P) + '" y="' + (H-6) + '" text-anchor="end" class="axis">' + rs[rs.length-1].date.slice(5) + '</text>';
+    // 最大最小
+    g += '<text x="' + (W-P) + '" y="' + (y(max-pad)+4).toFixed(1) + '" text-anchor="end" class="axis">' + (max-pad).toFixed(1) + '</text>';
+    g += '<text x="' + (W-P) + '" y="' + (y(min+pad)-2).toFixed(1) + '" text-anchor="end" class="axis">' + (min+pad).toFixed(1) + '</text>';
+    svg.innerHTML = g;
+  }
+
+  document.getElementById('btnSave').onclick = function(){
+    var d = document.getElementById('inDate').value;
+    var w = parseFloat(document.getElementById('inWeight').value);
+    if (!d) { alert('选个日期'); return; }
+    if (!(w > 30 && w < 200)) { alert('体重填个数（30–200 kg）'); return; }
+    var idx = -1;
+    for (var i = 0; i < state.records.length; i++) {
+      if (state.records[i].date === d) { idx = i; break; }
+    }
+    if (idx >= 0) {
+      if (!confirm(d + ' 已有记录（' + state.records[idx].weight.toFixed(1) + ' kg），覆盖？')) return;
+      state.records[idx].weight = Math.round(w*10)/10;
+    } else {
+      state.records.push({ date: d, weight: Math.round(w*10)/10 });
+    }
+    document.getElementById('inWeight').value = '';
+    save(); render();
+  };
+
+  // 同步
+  function initSync(){
+    if (!window.HealthSync) { setTimeout(initSync, 300); return; }
+    try {
+      HealthSync.init({
+        app: 'weight',
+        snapshot: function(){ return { records: state.records, updatedAt: new Date().toISOString() }; },
+        restore: function(p){
+          if (p && Array.isArray(p.records)) {
+            state.records = p.records.map(function(r){ return { date: r.date, weight: Number(r.weight) }; });
+            saveLocal(); render();
+          }
+        },
+        merge: function(remote){
+          if (!remote || !Array.isArray(remote.records)) return false;
+          var map = {};
+          state.records.forEach(function(r){ map[r.date] = r.weight; });
+          var changed = false;
+          remote.records.forEach(function(r){
+            if (!(r.date in map)) { map[r.date] = Number(r.weight); changed = true; }
+          });
+          if (changed) {
+            state.records = Object.keys(map).map(function(d){ return { date: d, weight: map[d] }; });
+            saveLocal(); render();
+          }
+          return changed;
+        },
+        hasData: function(){ return state.records.length > 0; },
+        rerender: render
+      });
+
+      var btn = document.getElementById('syncbtn');
+      var tick = setInterval(function(){
+        if (!HealthSync.status) return;
+        var s = HealthSync.status;
+        if (s === 'local') { btn.textContent = '仅本机'; btn.className = 'syncbtn'; }
+        else if (s === 'ok') { btn.textContent = '已同步'; btn.className = 'syncbtn ok'; }
+        else if (s === 'syncing') { btn.textContent = '同步中…'; btn.className = 'syncbtn'; }
+        else if (s === 'error') { btn.textContent = '同步失败'; btn.className = 'syncbtn'; }
+      }, 500);
+    } catch(e) { console.warn('sync init failed', e); }
+  }
+
+  // 初始化
+  document.getElementById('inDate').value = todayStr();
+  render();
+  initSync();
+})();
+</script>
+</body>
+</html>
