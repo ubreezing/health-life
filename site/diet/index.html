@@ -644,7 +644,16 @@ function migrate(){
   }
   if(changed)save();
 }
+/* 每次本地保存都盖上时间戳：settings 整块一个、每条 history 一个、每个 food 一个。
+   同步合并时按 _ts 比新旧，避免旧设备把云端的新目标/新数值盖回去。 */
+function stampAll(){
+  var now=Date.now();
+  if(state.settings) state.settings._ts=now;
+  (state.history||[]).forEach(function(r){ if(r&&!r._ts) r._ts=now; });
+  (state.foods||[]).forEach(function(f){ if(f&&!f._ts) f._ts=now; });
+}
 function save(){
+  stampAll();
   try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}
   if(__syncReady && window.HealthSync){ try{ HealthSync.touch(); }catch(e2){} }
 }
@@ -1563,21 +1572,63 @@ window.__dietApply=function(o){
       if(!p||!p.foods) return;
       if(window.__dietApply) window.__dietApply(p);
     },
-    /* 按 sid 合并 history：两边并集，本地已有的不覆盖。返回本地是否有变化。 */
+    /* 合并策略：按 sid 并集 + 按 _ts 取新。
+       - history：同一 sid 比 _ts，新的胜出（这样云端修正能覆盖本地旧值）
+       - settings：整块比 _ts，新的胜出（避免旧设备把新目标盖回去）
+       - foods：按 id 并集，同 id 比 _ts */
     merge:function(remote){
       if(!remote||!remote.foods) return false;
       var raw=localStorage.getItem('eatro.rotation.v3');
       var local=null;
       if(raw){ try{ local=JSON.parse(raw); }catch(e){ local=null; } }
       if(!local){ if(window.__dietApply) window.__dietApply(remote); return true; }
-      var seen={}, out=[];
-      (local.history||[]).forEach(function(r){ if(r&&r.sid) seen[r.sid]=1; out.push(r); });
       var changed=false;
-      (remote.history||[]).forEach(function(r){
-        if(r&&r.sid&&!seen[r.sid]){ seen[r.sid]=1; out.push(r); changed=true; }
+
+      /* --- settings：整块比时间戳 --- */
+      var lsTs=+((local.settings||{})._ts||0);
+      var rsTs=+((remote.settings||{})._ts||0);
+      if(rsTs>lsTs && remote.settings){
+        var keepTs=rsTs;
+        local.settings=Object.assign({},remote.settings);
+        local.settings._ts=keepTs;
+        changed=true;
+      }
+
+      /* --- history：按 sid 合并，同 sid 取 _ts 更大的 --- */
+      var map={},order=[];
+      (local.history||[]).forEach(function(r){
+        if(!r)return;
+        var k=r.sid||('__i'+order.length);
+        if(!map[k]){ map[k]=r; order.push(k); }
       });
+      (remote.history||[]).forEach(function(r){
+        if(!r)return;
+        var k=r.sid;
+        if(!k)return;
+        if(!map[k]){ map[k]=r; order.push(k); changed=true; }
+        else {
+          var a=+((map[k]._ts)||0), b=+((r._ts)||0);
+          if(b>a){ map[k]=r; changed=true; }
+        }
+      });
+      if(changed){
+        local.history=order.map(function(k){return map[k];});
+      }
+
+      /* --- foods：按 id 并集，同 id 取 _ts 更大的 --- */
+      var fmap={},forder=[];
+      (local.foods||[]).forEach(function(f){ if(!f)return; var k=f.id||f.name; fmap[k]=f; forder.push(k); });
+      (remote.foods||[]).forEach(function(f){
+        if(!f)return; var k=f.id||f.name;
+        if(!fmap[k]){ fmap[k]=f; forder.push(k); changed=true; }
+        else {
+          var a=+((fmap[k]._ts)||0), b=+((f._ts)||0);
+          if(b>a){ fmap[k]=f; changed=true; }
+        }
+      });
+      if(changed){ local.foods=forder.map(function(k){return fmap[k];}); }
+
       if(!changed) return false;
-      local.history=out;
       localStorage.setItem('eatro.rotation.v3', JSON.stringify(local));
       if(window.__dietApply) window.__dietApply(local);
       return true;
