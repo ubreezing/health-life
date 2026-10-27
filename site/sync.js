@@ -436,6 +436,13 @@
     });
     global.addEventListener('focus', function () { if (S.session) pull(true); });
     global.addEventListener('online', function () { if (S.session) pull(true); });
+
+    /* 页面可见时每 45 秒拉一次。
+       只靠 visibilitychange/focus 的话，页面一直开着就收不到别的设备写进来的数据
+       （比如在电脑端补记了一条，手机上还是旧的）。 */
+    setInterval(function () {
+      if (!document.hidden && S.session && S.status !== 'syncing') pull(true);
+    }, 45000);
   }
 
   var api = {
