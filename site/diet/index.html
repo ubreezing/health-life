@@ -699,7 +699,9 @@ function todayIntake(){
       else if(h.carbs!==undefined||h.protein!==undefined||h.fat!==undefined){
         carb+=h.carbs||0;protein+=h.protein||0;cal+=h.kcal||0;fat+=h.fat||0;
       }
-    }else if(h.type==='snack'){
+    }else if(h.type==='snack'||h.type==='breakfast'||h.type==='lunch'||h.type==='dinner'){
+      /* 也兼容 type 直接写成餐次名（breakfast/lunch/dinner）的记录；
+         外部写入（脚本/API）常用这种写法，漏掉会让合计偏少。 */
       carb+=h.carbs||0;protein+=h.protein||0;cal+=h.kcal||0;fat+=h.fat||0;
     }
   });
